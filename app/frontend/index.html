@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Three-Tier Java App on Kubernetes</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 760px;
+      margin: 40px auto;
+      padding: 0 16px;
+      background: #f5f7fa;
+      color: #1f2937;
+    }
+    .card {
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    h1 {
+      margin-top: 0;
+      font-size: 22px;
+    }
+    .row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+    input {
+      flex: 1;
+      min-width: 180px;
+      padding: 8px 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+    }
+    button {
+      padding: 8px 14px;
+      border: none;
+      border-radius: 6px;
+      background: #2563eb;
+      color: #fff;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #1d4ed8;
+    }
+    ul {
+      padding-left: 20px;
+    }
+    li {
+      margin-bottom: 6px;
+    }
+    .status {
+      font-weight: bold;
+      color: #047857;
+    }
+    .error {
+      color: #b91c1c;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Three-Tier Java Application (AWS + K8s)</h1>
+    <div id="health" class="status">Checking backend health...</div>
+  </div>
+
+  <div class="card">
+    <h2>Add Item</h2>
+    <div class="row">
+      <input id="itemName" type="text" placeholder="Item name" />
+      <input id="itemDesc" type="text" placeholder="Description (optional)" />
+      <button onclick="addItem()">Add</button>
+    </div>
+    <div id="msg"></div>
+  </div>
+
+  <div class="card">
+    <h2>Items from Database</h2>
+    <button onclick="loadItems()">Refresh</button>
+    <ul id="itemsList"></ul>
+  </div>
+
+  <script>
+    async function loadHealth() {
+      const el = document.getElementById("health");
+      try {
+        const res = await fetch("/api/health");
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const data = await res.json();
+        el.className = "status";
+        el.textContent = `Backend: ${data.status} | DB: ${data.database} | Items: ${data.itemsCount}`;
+      } catch (err) {
+        el.className = "error";
+        el.textContent = "Backend unreachable: " + err.message;
+      }
+    }
+
+    async function loadItems() {
+      const list = document.getElementById("itemsList");
+      list.innerHTML = "<li>Loading...</li>";
+      try {
+        const res = await fetch("/api/items");
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const items = await res.json();
+        if (!items.length) {
+          list.innerHTML = "<li>No items found yet.</li>";
+          return;
+        }
+        list.innerHTML = items
+          .map((i) => `<li><strong>${escapeHtml(i.name)}</strong>${i.description ? " - " + escapeHtml(i.description) : ""}</li>`)
+          .join("");
+      } catch (err) {
+        list.innerHTML = `<li class="error">Failed to load items: ${escapeHtml(err.message)}</li>`;
+      }
+    }
+
+    async function addItem() {
+      const nameInput = document.getElementById("itemName");
+      const descInput = document.getElementById("itemDesc");
+      const msg = document.getElementById("msg");
+      const name = nameInput.value.trim();
+      const description = descInput.value.trim();
+
+      if (!name) {
+        msg.className = "error";
+        msg.textContent = "Please enter an item name.";
+        return;
+      }
+
+      try {
+        const res = await fetch("/api/items", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, description })
+        });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        nameInput.value = "";
+        descInput.value = "";
+        msg.className = "status";
+        msg.textContent = "Item saved.";
+        await loadHealth();
+        await loadItems();
+      } catch (err) {
+        msg.className = "error";
+        msg.textContent = "Failed to save item: " + err.message;
+      }
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    loadHealth();
+    loadItems();
+  </script>
+</body>
+</html>
