@@ -5,7 +5,7 @@ pipeline {
         DOCKERHUB_REPO_PREFIX = 'poonamcloud'
         BACKEND_IMAGE = "${DOCKERHUB_REPO_PREFIX}/three-tier-backend"
         FRONTEND_IMAGE = "${DOCKERHUB_REPO_PREFIX}/three-tier-frontend"
-        K8S_MASTER_IP = '35.154.1.214'
+        K8S_MASTER_IP = '13.233.125.143'
         K8S_MASTER_USER = 'ubuntu'
     }
 
