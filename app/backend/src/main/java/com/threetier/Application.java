@@ -60,7 +60,7 @@ class ApiController {
     }
 
     @GetMapping("/health")
-    public ResponseEntity> health() {
+    public ResponseEntity health() {
         long count = itemRepository.count();
         return ResponseEntity.ok(Map.of(
                 "status", "UP",
