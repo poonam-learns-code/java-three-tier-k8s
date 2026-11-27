@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: backend
-          image: punamcloud/three-tier-backend:latest
+          image: poonamcloud/three-tier-backend:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
